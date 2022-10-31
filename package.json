@@ -1,0 +1,26 @@
+{
+  "name": "company-cms",
+  "version": "1.0.0",
+  "description": "This project allows business owners to view and manage the departments, roles, and employees within their company. It allows the business owner to thus organize and plan the business utilizing the command-line interface tools provided through this application.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dannyjunlee/company-cms.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dannyjunlee/company-cms/issues"
+  },
+  "homepage": "https://github.com/dannyjunlee/company-cms#readme",
+  "dependencies": {
+    "console.table": "^0.10.0",
+    "inquirer": "^8.2.4",
+    "mysql2": "^2.3.3"
+  }
+}
