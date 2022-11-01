@@ -2,6 +2,7 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cTable = require('console.table');
+const router = require('./routes');
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -9,6 +10,7 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({extended: false}));
+app.use('./', router);
 
 // Establish MySQL connection
 const db = mysql.createConnection(
