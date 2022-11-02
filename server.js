@@ -5,13 +5,6 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const utils = require('util');
 
-const PORT = process.env.PORT || 3001;
-const app = express();
-
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({extended: false}));
-
 // Establish MySQL connection
 const db = mysql.createConnection(
     {
@@ -39,7 +32,7 @@ const initialPrompt = async () => {
     try {
         let action = await inquirer.prompt({
             type: 'list',
-            message: 'What would you like to do?',
+            message: 'What would you like to do? Press ctrl/cmd + C at any point to quit.',
             choices: ['View all departments', 'View all roles', 'View all employees', 'Add a department', 'Add a role', 'Add an employee', 'Update employee role', 'Quit'],
             name: 'initPrompt'
         });
@@ -65,9 +58,6 @@ const initialPrompt = async () => {
             case 'Update employee role':
                 updateEmployee();
                 break;
-            case 'Quit':
-                db.end();
-                break;
         };
     } catch (err) {
         console.log(err);
@@ -82,8 +72,10 @@ const viewDept = () => {
     console.log('View all departments');
     db.query('SELECT * FROM departments', function (err, res) {
         if (err) throw err;
+        console.log('\n');
         console.table(res);
     });
+    initialPrompt();
 };
 
 // View all roles
@@ -91,8 +83,10 @@ const viewRoles = () => {
     console.log('View all roles');
     db.query('SELECT * FROM roles', function (err, res) {
         if (err) throw err;
+        console.log('\n');
         console.table(res);
     });
+    initialPrompt();
 };
 
 // View all employees
@@ -100,8 +94,10 @@ const viewEmployees = () => {
     console.log('View all employees');
     db.query('SELECT * FROM employees', function (err, res) {
         if (err) throw err;
+        console.log('\n');
         console.table(res);
     });
+    initialPrompt();
 };
 
 // Add a department
@@ -117,16 +113,16 @@ const addDept = async () => {
     ])
 
     await db.query('INSERT INTO departments (`name`) VALUES (?)', [response.newDept], function (err, res) {
+        console.log('\n');
         console.table(res);
         console.log(`${response.newDept} has been added to departments.`);
     });
+    initialPrompt();
 };
 
 // Add a role
 const addRole = async () => {
     console.log('Add a role');
-
-
 
     let response = await inquirer.prompt([
         {
@@ -148,9 +144,11 @@ const addRole = async () => {
 
     // Add new role
     await db.query('INSERT INTO roles (`title`, `salary`, `department_id`) VALUES (?, ?, ?)', [response.newRole, response.salary, response.department], function (err, res) {
+        console.log('\n');
         console.table(res);
         console.log(`${response.newRole} has been added to roles.`);
     });
+    initialPrompt();
 };
 
 // Add an employee
@@ -165,7 +163,7 @@ const addEmployee = async () => {
         },
         {
             type: 'input',
-            message: 'What is the lsat name of the new employee?',
+            message: 'What is the last name of the new employee?',
             name: 'lastName'
         },
         {
@@ -180,45 +178,36 @@ const addEmployee = async () => {
         }
     ]);
 
-    // Solving for role_id
-    var roles = [];
-    db.query('SELECT * FROM roles', function (err, res) {
-        res.forEach(role => roles.push(role));
-    });
-
-    let index;
-    for (let i = 0; i < roles.length; i++) {
-        if (response.role === roles[i]) index = i;
-        else index = roles.length + 1;
-    };
-
-    // Solving for manager_id
-    let mgrs = [];
-    db.query('SELECT `first_name`, `last_name` FROM employees', function (err, res) {
-        res.forEach(mgr => mgrs.push(mgr));
-    });
-
-    let index2;
-    for (let i = 0; i < mgrs.length; i++) {
-        if (response.manager.split(' ')[1] === mgrs[i][1]) index2 = i;
-        else index2 = null;
-    }
-
     // Add new employee
     await db.query('INSERT INTO employees (`first_name`, `last_name`, `role_id`, `manager_id`) VALUES (?, ?, ?, ?)', [response.firstName, response.lastName, response.role, response.manager], function (err, res) {
+        console.log('\n');
         console.table(res);
         console.log(`${response.firstName} ${response.lastName} has been added as a new employee`);
     });
+    initialPrompt();
 };
 
 // Update employee role
+const updateEmployee = async () => {
+    console.log('Update employee role');
 
-// End if 404
-app.use((req, res) => {
-    res.status(404).end();
-});
+    let response = await inquirer.prompt([
+        {
+            type: 'input',
+            message: 'What is the ID of the employee you would like to update?',
+            name: 'employeeID'
+        },
+        {
+            type: 'input',
+            message: 'What is the new role you would like to assign to this employee?',
+            name: 'newRole'
+        }
+    ]);
 
-// Listen
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+    await db.query('UPDATE employees SET name = ? WHERE id = ?', [response.newRole, response.employeeID], function (err, res) {
+        console.log('\n');
+        console.table(res);
+        console.log(`${response.newRole} has been assigned to employee ID ${response.employeeID}.`);
+    });
+    initialPrompt();
+};
