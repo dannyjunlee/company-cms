@@ -3,6 +3,7 @@ const express = require('express');
 const mysql = require('mysql2');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
+const utils = require('util');
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -21,6 +22,8 @@ const db = mysql.createConnection(
     },
     console.log('Connected to company_db database')
 );
+
+db.query = utils.promisify(db.query);
 
 db.connect(function (err) {
     if (err) throw err;
@@ -103,7 +106,6 @@ const viewEmployees = () => {
 
 // Add a department
 const addDept = async () => {
-    const mysqlPrms = require('mysql2/promise');
     console.log('Add a department');
 
     let response = await inquirer.prompt([
@@ -114,19 +116,28 @@ const addDept = async () => {
         }
     ])
 
-    db.query('INSERT INTO department (`name`) VALUES (?)', [response.newDept], function (err, res) {
+    await db.query('INSERT INTO departments (`name`) VALUES (?)', [response.newDept], function (err, res) {
         console.table(res);
+        console.log(`${response.newDept} has been added to departments.`);
     });
-
-    console.log(`${response.newDept} has been added to departments.`);
-    initialPrompt();
 };
 
 // Add a role
-const addRole = () => {
+const addRole = async () => {
     console.log('Add a role');
 
-    let response = inquirer.prompt([
+    // Solving for department_id
+    var depts = [];
+    db.query('SELECT * FROM departments', function (err, res) {
+        res.forEach(dept => depts.push(dept));
+    });
+
+    let index;
+    for (let i = 0; i < depts.length; i++) {
+        if (response.department === depts[i]) index = i + 1;
+    };
+
+    let response = await inquirer.prompt([
         {
             type: 'input',
             message: 'What is the new role?',
@@ -144,29 +155,18 @@ const addRole = () => {
         }
     ]);
 
-    // Solving for department_id
-    var depts = [];
-    db.query('SELECT * FROM departments', function (err, res) {
-        res.forEach(dept => depts.push(dept));
-    });
-
-    let index;
-    for (let i = 0; i < depts.length; i++) {
-        if (response.department === depts[i]) index = i;
-        else index = depts.length + 1;
-    };
-
     // Add new role
-    db.query('INSERT INTO roles VALUES ?', {title: response.newRole, salary: response.salary, department_id: index});
-
-    console.log(`${response.newRole} has been added to roles.`)
-}
+    await db.query('INSERT INTO roles VALUES ?', [response.newRole, response.salary, index], function (err, res) {
+        console.table(res);
+        console.log(`${response.newRole} has been added to roles.`);
+    });
+};
 
 // Add an employee
 const addEmployee = async () => {
     console.log('Add an employee');
 
-    let response = inquirer.prompt([
+    let response = await inquirer.prompt([
         {
             type: 'input',
             message: 'What is the first name of the new employee?',
@@ -214,9 +214,10 @@ const addEmployee = async () => {
     }
 
     // Add new employee
-    db.query('INSERT INTO employees VALUES ?', {first_name: response.firstName, last_name: response.lastName, role_id: index, manager_id: index2});
-
-    console.log(`${response.first_name} ${response.last_name} has been added as a new employee`);
+    await db.query('INSERT INTO employees VALUES ?', {first_name: response.firstName, last_name: response.lastName, role_id: index, manager_id: index2}, function (err, res) {
+        console.table(res);
+        console.log(`${response.first_name} ${response.last_name} has been added as a new employee`);
+    });
 };
 
 // Update employee role
