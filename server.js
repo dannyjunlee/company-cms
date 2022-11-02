@@ -126,16 +126,7 @@ const addDept = async () => {
 const addRole = async () => {
     console.log('Add a role');
 
-    // Solving for department_id
-    var depts = [];
-    db.query('SELECT * FROM departments', function (err, res) {
-        res.forEach(dept => depts.push(dept));
-    });
 
-    let index;
-    for (let i = 0; i < depts.length; i++) {
-        if (response.department === depts[i]) index = i + 1;
-    };
 
     let response = await inquirer.prompt([
         {
@@ -150,13 +141,13 @@ const addRole = async () => {
         },
         {
             type: 'input',
-            message: 'What department is this role a part of?',
+            message: 'What is the department ID for this role?',
             name: 'department'
         }
     ]);
 
     // Add new role
-    await db.query('INSERT INTO roles VALUES ?', [response.newRole, response.salary, index], function (err, res) {
+    await db.query('INSERT INTO roles (`title`, `salary`, `department_id`) VALUES (?, ?, ?)', [response.newRole, response.salary, response.department], function (err, res) {
         console.table(res);
         console.log(`${response.newRole} has been added to roles.`);
     });
@@ -179,12 +170,12 @@ const addEmployee = async () => {
         },
         {
             type: 'input',
-            message: 'What is the role of the new employee?',
+            message: 'What is the role ID of the new employee?',
             name: 'role'
         },
         {
             type: 'input',
-            message: "Whos is the new employee's manager?",
+            message: "Whos is the new employee's manager ID?",
             name: 'manager'
         }
     ]);
@@ -214,9 +205,9 @@ const addEmployee = async () => {
     }
 
     // Add new employee
-    await db.query('INSERT INTO employees VALUES ?', {first_name: response.firstName, last_name: response.lastName, role_id: index, manager_id: index2}, function (err, res) {
+    await db.query('INSERT INTO employees (`first_name`, `last_name`, `role_id`, `manager_id`) VALUES (?, ?, ?, ?)', [response.firstName, response.lastName, response.role, response.manager], function (err, res) {
         console.table(res);
-        console.log(`${response.first_name} ${response.last_name} has been added as a new employee`);
+        console.log(`${response.firstName} ${response.lastName} has been added as a new employee`);
     });
 };
 
